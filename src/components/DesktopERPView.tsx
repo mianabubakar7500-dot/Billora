@@ -39,12 +39,15 @@ export const DesktopERPView: React.FC = () => {
     setIsSaleModalOpen,
     setIsPartyModalOpen,
     setIsItemModalOpen,
+    setIsStockAdjustModalOpen,
     setIsPrintModalOpen,
     setIsProfileModalOpen,
     setIsPartySettingsModalOpen,
     setIsSyncModalOpen,
     setViewMode,
     deleteTransaction,
+    deleteItem,
+    deleteParty,
     convertQuotationToSale,
     triggerSync,
     isSyncing,
@@ -487,8 +490,8 @@ export const DesktopERPView: React.FC = () => {
                   <p className="text-xs text-gray-500">Manage products, stock quantity, prices and low stock limits</p>
                 </div>
                 <button
-                  onClick={() => setIsItemModalOpen(true)}
-                  className="px-4 py-2 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5"
+                  onClick={() => setIsItemModalOpen(true, null)}
+                  className="px-4 py-2 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   <span>+ Add New Item</span>
@@ -497,7 +500,7 @@ export const DesktopERPView: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {items.map((i) => (
-                  <div key={i.id} className="p-4 rounded-xl border border-gray-200 hover:border-sky-400 transition-colors">
+                  <div key={i.id} className="p-4 rounded-xl border border-gray-200 hover:border-sky-400 transition-colors space-y-2">
                     <div className="flex items-start justify-between">
                       <h4 className="font-bold text-sm text-gray-900">{i.name}</h4>
                       <span
@@ -510,12 +513,40 @@ export const DesktopERPView: React.FC = () => {
                         {i.stockQuantity} {i.unit}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-400">
                       {i.category} • Code: {i.itemCode || 'N/A'}
                     </p>
-                    <div className="flex items-center justify-between mt-3 pt-2 border-t text-xs">
+                    <div className="flex items-center justify-between pt-2 border-t text-xs">
                       <span className="font-bold text-gray-800">Sale: Rs {i.salePrice}</span>
                       <span className="text-gray-500">Purchase: Rs {i.purchasePrice}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t text-xs">
+                      <button
+                        onClick={() => setIsStockAdjustModalOpen(true, i)}
+                        className="text-[11px] font-bold text-sky-600 hover:text-sky-800 bg-sky-50 px-2.5 py-1 rounded-lg"
+                      >
+                        Adjust Stock
+                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setIsItemModalOpen(true, i)}
+                          title="Edit Item"
+                          className="p-1 text-gray-500 hover:text-sky-600 rounded hover:bg-gray-100"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete item "${i.name}"?`)) {
+                              deleteItem(i.id);
+                            }
+                          }}
+                          title="Delete Item"
+                          className="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -532,8 +563,8 @@ export const DesktopERPView: React.FC = () => {
                   <p className="text-xs text-gray-500">Manage parties, ledgers, and contact numbers</p>
                 </div>
                 <button
-                  onClick={() => setIsPartyModalOpen(true)}
-                  className="px-4 py-2 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5"
+                  onClick={() => setIsPartyModalOpen(true, null)}
+                  className="px-4 py-2 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all"
                 >
                   <Plus className="w-4 h-4" />
                   <span>+ Add New Party</span>
@@ -542,16 +573,16 @@ export const DesktopERPView: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {parties.map((p) => (
-                  <div key={p.id} className="p-4 rounded-xl border border-gray-200 hover:border-sky-400 transition-colors">
+                  <div key={p.id} className="p-4 rounded-xl border border-gray-200 hover:border-sky-400 transition-colors space-y-2">
                     <div className="flex items-start justify-between">
                       <h4 className="font-bold text-sm text-gray-900">{p.name}</h4>
                       <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full">
                         {p.type}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{p.phone}</p>
+                    <p className="text-xs text-gray-500">{p.phone || 'No phone number'}</p>
                     <p className="text-xs text-gray-400 truncate">{p.billingAddress || 'No address'}</p>
-                    <div className="mt-3 pt-2 border-t flex justify-between items-center text-xs">
+                    <div className="pt-2 border-t flex justify-between items-center text-xs">
                       <span className="font-bold text-gray-700">Balance:</span>
                       <span
                         className={`font-black ${
@@ -563,6 +594,26 @@ export const DesktopERPView: React.FC = () => {
                           ({p.balanceType === 'to_receive' ? "You'll Get" : "You'll Pay"})
                         </small>
                       </span>
+                    </div>
+                    <div className="flex items-center justify-end gap-1 pt-1.5 border-t text-xs">
+                      <button
+                        onClick={() => setIsPartyModalOpen(true, p)}
+                        title="Edit Party"
+                        className="p-1 text-gray-500 hover:text-sky-600 rounded hover:bg-gray-100"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete party "${p.name}"?`)) {
+                            deleteParty(p.id);
+                          }
+                        }}
+                        title="Delete Party"
+                        className="p-1 text-gray-400 hover:text-rose-600 rounded hover:bg-rose-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}

@@ -36,6 +36,8 @@ export const SaleInvoiceModal: React.FC = () => {
     addParty,
     setIsPrintModalOpen,
     transactions,
+    setIsPartyModalOpen,
+    setIsItemModalOpen,
   } = useApp();
 
   const isQuotation = saleModalType === 'QUOTATION';
@@ -65,6 +67,7 @@ export const SaleInvoiceModal: React.FC = () => {
   const [partyPhone, setPartyPhone] = useState('');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('Cash');
   const [notes, setNotes] = useState('');
+  const [customerError, setCustomerError] = useState<string | null>(null);
 
   const [lineItems, setLineItems] = useState<TransactionItem[]>([
     {
@@ -359,7 +362,7 @@ export const SaleInvoiceModal: React.FC = () => {
 
   const handleSaveInvoice = (andPrint: boolean = false) => {
     if (!partyName.trim()) {
-      alert('Please enter or select a customer name');
+      setCustomerError('Please enter or select a customer name');
       return;
     }
 
@@ -376,7 +379,7 @@ export const SaleInvoiceModal: React.FC = () => {
       // Automatically add customer so user never has to add them again
       const newParty = addParty({
         name: partyName.trim(),
-        phone: partyPhone.trim() || '03000000000',
+        phone: partyPhone.trim() || '',
         type: isPurchase ? 'Supplier' : 'Customer',
         billingAddress: '',
         openingBalance: 0,
@@ -534,6 +537,7 @@ export const SaleInvoiceModal: React.FC = () => {
                     onFocus={() => setShowCustomerDropdown(true)}
                     onChange={(e) => {
                       setPartyName(e.target.value);
+                      if (customerError) setCustomerError(null);
                       setShowCustomerDropdown(true);
                       // If typing matches existing party exactly, auto-fill phone
                       const match = parties.find(
@@ -546,7 +550,11 @@ export const SaleInvoiceModal: React.FC = () => {
                         setSelectedPartyId('');
                       }
                     }}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-sky-500 pr-8"
+                    className={`w-full px-3 py-2 bg-white border rounded-xl font-bold text-gray-800 focus:outline-none pr-8 transition-all ${
+                      customerError
+                        ? 'border-rose-500 focus:ring-2 focus:ring-rose-200'
+                        : 'border-gray-200 focus:ring-2 focus:ring-sky-500'
+                    }`}
                   />
                   <button
                     type="button"
@@ -556,12 +564,25 @@ export const SaleInvoiceModal: React.FC = () => {
                     <ChevronDown className="w-4 h-4" />
                   </button>
                 </div>
+                {customerError && (
+                  <p className="text-[11px] text-rose-600 font-bold mt-1">{customerError}</p>
+                )}
 
                 {/* Customer Dropdown Menu */}
                 {showCustomerDropdown && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-30 max-h-48 overflow-y-auto divide-y divide-gray-100 text-xs">
-                    <div className="p-2 bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                      Saved Customers ({filteredParties.length})
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-gray-100 text-xs">
+                    <div className="p-2 bg-gray-50 flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                      <span>Saved Customers ({filteredParties.length})</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowCustomerDropdown(false);
+                          setIsPartyModalOpen(true);
+                        }}
+                        className="text-sky-600 hover:text-sky-800 font-bold lowercase first-letter:uppercase"
+                      >
+                        + Add Details
+                      </button>
                     </div>
                     {filteredParties.length > 0 ? (
                       filteredParties.map((p) => (
@@ -586,6 +607,16 @@ export const SaleInvoiceModal: React.FC = () => {
                         No customer found. Typing will save <span className="font-bold text-gray-700">"{partyName}"</span> automatically!
                       </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomerDropdown(false);
+                        setIsPartyModalOpen(true);
+                      }}
+                      className="w-full py-2 bg-gray-50 hover:bg-sky-50 text-sky-700 font-bold text-center block transition-colors text-xs"
+                    >
+                      + Add New Customer / Party
+                    </button>
                   </div>
                 )}
 
@@ -667,14 +698,23 @@ export const SaleInvoiceModal: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider">Items / Products</h3>
-              <button
-                type="button"
-                id="btn-add-item-row"
-                onClick={addLineItem}
-                className="flex items-center gap-1 text-xs font-bold text-[#e52b44] hover:underline"
-              >
-                <Plus className="w-3.5 h-3.5" /> Add Row
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsItemModalOpen(true, null)}
+                  className="flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-800 hover:underline"
+                >
+                  <Plus className="w-3.5 h-3.5" /> + New Item
+                </button>
+                <button
+                  type="button"
+                  id="btn-add-item-row"
+                  onClick={addLineItem}
+                  className="flex items-center gap-1 text-xs font-bold text-[#e52b44] hover:underline"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Row
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2">

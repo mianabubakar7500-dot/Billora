@@ -13,6 +13,8 @@ import { PartyModal } from './components/PartyModal';
 import { BusinessProfileModal } from './components/BusinessProfileModal';
 import { PartySettingsModal } from './components/PartySettingsModal';
 import { DataSyncModal } from './components/DataSyncModal';
+import { ItemModal } from './components/ItemModal';
+import { StockAdjustModal } from './components/StockAdjustModal';
 
 const MainLayout: React.FC = () => {
   const { viewMode, activeTab } = useApp();
@@ -42,6 +44,8 @@ const MainLayout: React.FC = () => {
       <SaleInvoiceModal />
       <InvoicePrintModal />
       <PartyModal />
+      <ItemModal />
+      <StockAdjustModal />
       <BusinessProfileModal />
       <PartySettingsModal />
       <DataSyncModal />
