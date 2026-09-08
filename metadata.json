@@ -1,0 +1,6 @@
+{
+  "name": "Billora Billing App",
+  "description": "Vyapar-styled inventory, invoicing, quotation, parties management, and billing software with cross-platform mobile and desktop support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
