@@ -19,9 +19,24 @@ import {
   Clock,
   Sparkles,
   ChevronDown,
+  Building2,
+  Mail,
+  MapPin,
 } from 'lucide-react';
 
 const STORAGE_KEY_LAST_CUSTOMER = 'billora_last_customer_v1';
+
+export interface EditableTransactionItem {
+  id: string;
+  itemId?: string;
+  name: string;
+  quantity: number | string;
+  unit: string;
+  rate: number | string;
+  discountPercent?: number | string;
+  taxPercent?: number;
+  amount: number;
+}
 
 export const SaleInvoiceModal: React.FC = () => {
   const {
@@ -37,7 +52,7 @@ export const SaleInvoiceModal: React.FC = () => {
     setIsPrintModalOpen,
     transactions,
     setIsPartyModalOpen,
-    setIsItemModalOpen,
+    businessProfile,
   } = useApp();
 
   const isQuotation = saleModalType === 'QUOTATION';
@@ -65,21 +80,25 @@ export const SaleInvoiceModal: React.FC = () => {
   const [selectedPartyId, setSelectedPartyId] = useState<string>('');
   const [partyName, setPartyName] = useState('');
   const [partyPhone, setPartyPhone] = useState('');
+  const [businessPhone, setBusinessPhone] = useState(businessProfile?.phone1 || '');
+  const [businessEmail, setBusinessEmail] = useState(businessProfile?.email || '');
+  const [businessAddress, setBusinessAddress] = useState(businessProfile?.address || '');
+  const [showOfficeDetails, setShowOfficeDetails] = useState(false);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('Cash');
   const [notes, setNotes] = useState('');
   const [customerError, setCustomerError] = useState<string | null>(null);
 
-  const [lineItems, setLineItems] = useState<TransactionItem[]>([
+  const [lineItems, setLineItems] = useState<EditableTransactionItem[]>([
     {
       id: 'li-1',
-      itemId: stockItems[0]?.id || '',
-      name: stockItems[0]?.name || 'Standard Item',
+      itemId: '',
+      name: '',
       quantity: 1,
-      unit: stockItems[0]?.unit || 'Pcs',
-      rate: isPurchase ? stockItems[0]?.purchasePrice || 60 : stockItems[0]?.salePrice || 100,
-      discountPercent: 0,
-      taxPercent: stockItems[0]?.taxPercent || 0,
-      amount: isPurchase ? stockItems[0]?.purchasePrice || 60 : stockItems[0]?.salePrice || 100,
+      unit: 'Pcs',
+      rate: '',
+      discountPercent: '',
+      taxPercent: 0,
+      amount: 0,
     },
   ]);
 
@@ -111,21 +130,33 @@ export const SaleInvoiceModal: React.FC = () => {
       setSelectedPartyId(editingTransaction.partyId || '');
       setPartyName(editingTransaction.partyName);
       setPartyPhone(editingTransaction.partyPhone || '');
+      setBusinessPhone(editingTransaction.businessPhone || businessProfile?.phone1 || '');
+      setBusinessEmail(editingTransaction.businessEmail || businessProfile?.email || '');
+      setBusinessAddress(editingTransaction.businessAddress || businessProfile?.address || '');
       setPaymentMode(editingTransaction.paymentMode);
       setNotes(editingTransaction.notes || '');
-      setLineItems(editingTransaction.items && editingTransaction.items.length > 0 ? editingTransaction.items : [
-        {
-          id: 'li-1',
-          itemId: stockItems[0]?.id || '',
-          name: stockItems[0]?.name || 'Standard Item',
-          quantity: 1,
-          unit: stockItems[0]?.unit || 'Pcs',
-          rate: 100,
-          discountPercent: 0,
-          taxPercent: 0,
-          amount: 100,
-        },
-      ]);
+      setLineItems(
+        editingTransaction.items && editingTransaction.items.length > 0
+          ? editingTransaction.items.map((it) => ({
+              ...it,
+              quantity: it.quantity,
+              rate: it.rate,
+              discountPercent: it.discountPercent || '',
+            }))
+          : [
+              {
+                id: 'li-1',
+                itemId: '',
+                name: '',
+                quantity: 1,
+                unit: 'Pcs',
+                rate: '',
+                discountPercent: '',
+                taxPercent: 0,
+                amount: 0,
+              },
+            ]
+      );
       setAmountReceived(editingTransaction.amountReceived);
       setIsDraftRestored(false);
       return;
@@ -142,6 +173,9 @@ export const SaleInvoiceModal: React.FC = () => {
           if (draft.selectedPartyId) setSelectedPartyId(draft.selectedPartyId);
           if (draft.partyName) setPartyName(draft.partyName);
           if (draft.partyPhone) setPartyPhone(draft.partyPhone);
+          if (draft.businessPhone !== undefined) setBusinessPhone(draft.businessPhone);
+          if (draft.businessEmail !== undefined) setBusinessEmail(draft.businessEmail);
+          if (draft.businessAddress !== undefined) setBusinessAddress(draft.businessAddress);
           if (draft.paymentMode) setPaymentMode(draft.paymentMode);
           if (draft.notes) setNotes(draft.notes);
           if (Array.isArray(draft.lineItems) && draft.lineItems.length > 0) {
@@ -186,20 +220,22 @@ export const SaleInvoiceModal: React.FC = () => {
       setPartyPhone('');
     }
 
-    // Default item
-    const firstStock = stockItems[0];
-    const initialRate = isPurchase ? firstStock?.purchasePrice || 60 : firstStock?.salePrice || 100;
+    setBusinessPhone(businessProfile?.phone1 || '');
+    setBusinessEmail(businessProfile?.email || '');
+    setBusinessAddress(businessProfile?.address || '');
+
+    // Default empty item row so customer can directly write item name and price manually
     setLineItems([
       {
         id: 'li-1',
-        itemId: firstStock?.id || '',
-        name: firstStock?.name || 'Standard Item',
+        itemId: '',
+        name: '',
         quantity: 1,
-        unit: firstStock?.unit || 'Pcs',
-        rate: initialRate,
-        discountPercent: 0,
-        taxPercent: firstStock?.taxPercent || 0,
-        amount: initialRate,
+        unit: 'Pcs',
+        rate: '',
+        discountPercent: '',
+        taxPercent: 0,
+        amount: 0,
       },
     ]);
     setIsDraftRestored(false);
@@ -218,6 +254,9 @@ export const SaleInvoiceModal: React.FC = () => {
       selectedPartyId,
       partyName,
       partyPhone,
+      businessPhone,
+      businessEmail,
+      businessAddress,
       paymentMode,
       notes,
       lineItems,
@@ -236,6 +275,9 @@ export const SaleInvoiceModal: React.FC = () => {
     selectedPartyId,
     partyName,
     partyPhone,
+    businessPhone,
+    businessEmail,
+    businessAddress,
     paymentMode,
     notes,
     lineItems,
@@ -243,25 +285,14 @@ export const SaleInvoiceModal: React.FC = () => {
   ]);
 
   // Recalculate line amounts
-  const updateItemRow = (index: number, field: keyof TransactionItem, value: any) => {
+  const updateItemRow = (index: number, field: keyof EditableTransactionItem, value: any) => {
     const updated = [...lineItems];
     const item = { ...updated[index], [field]: value };
 
-    // If changing stock item
-    if (field === 'itemId') {
-      const matched = stockItems.find((s) => s.id === value);
-      if (matched) {
-        item.name = matched.name;
-        item.unit = matched.unit;
-        item.rate = isPurchase ? matched.purchasePrice : matched.salePrice;
-        item.taxPercent = matched.taxPercent;
-      }
-    }
-
-    const qty = Number(item.quantity) || 0;
-    const rate = Number(item.rate) || 0;
-    const discount = Number(item.discountPercent) || 0;
-    const tax = Number(item.taxPercent) || 0;
+    const qty = parseFloat(String(item.quantity)) || 0;
+    const rate = parseFloat(String(item.rate)) || 0;
+    const discount = parseFloat(String(item.discountPercent)) || 0;
+    const tax = parseFloat(String(item.taxPercent)) || 0;
 
     const baseAmount = qty * rate;
     const discountAmount = (baseAmount * discount) / 100;
@@ -274,17 +305,16 @@ export const SaleInvoiceModal: React.FC = () => {
   };
 
   const addLineItem = () => {
-    const defaultStock = stockItems[0];
-    const newItem: TransactionItem = {
+    const newItem: EditableTransactionItem = {
       id: 'li-' + Date.now(),
-      itemId: defaultStock?.id || '',
-      name: defaultStock?.name || 'New Item',
+      itemId: '',
+      name: '',
       quantity: 1,
-      unit: defaultStock?.unit || 'Pcs',
-      rate: isPurchase ? defaultStock?.purchasePrice || 50 : defaultStock?.salePrice || 100,
-      discountPercent: 0,
-      taxPercent: defaultStock?.taxPercent || 0,
-      amount: isPurchase ? defaultStock?.purchasePrice || 50 : defaultStock?.salePrice || 100,
+      unit: 'Pcs',
+      rate: '',
+      discountPercent: '',
+      taxPercent: 0,
+      amount: 0,
     };
     setLineItems([...lineItems, newItem]);
   };
@@ -337,19 +367,17 @@ export const SaleInvoiceModal: React.FC = () => {
     setIsDraftRestored(false);
     // Reset to defaults
     setInvoiceNo(defaultInvoiceNo);
-    const firstStock = stockItems[0];
-    const initialRate = isPurchase ? firstStock?.purchasePrice || 60 : firstStock?.salePrice || 100;
     setLineItems([
       {
         id: 'li-1',
-        itemId: firstStock?.id || '',
-        name: firstStock?.name || 'Standard Item',
+        itemId: '',
+        name: '',
         quantity: 1,
-        unit: firstStock?.unit || 'Pcs',
-        rate: initialRate,
-        discountPercent: 0,
-        taxPercent: firstStock?.taxPercent || 0,
-        amount: initialRate,
+        unit: 'Pcs',
+        rate: '',
+        discountPercent: '',
+        taxPercent: 0,
+        amount: 0,
       },
     ]);
   };
@@ -391,6 +419,30 @@ export const SaleInvoiceModal: React.FC = () => {
       localStorage.setItem(STORAGE_KEY_LAST_CUSTOMER, newParty.id);
     }
 
+    const cleanedItems: TransactionItem[] = lineItems.map((item, idx) => {
+      const qty = parseFloat(String(item.quantity)) || 1;
+      const rate = parseFloat(String(item.rate)) || 0;
+      const discount = parseFloat(String(item.discountPercent)) || 0;
+      const tax = parseFloat(String(item.taxPercent)) || 0;
+      const baseAmount = qty * rate;
+      const discountAmount = (baseAmount * discount) / 100;
+      const taxableAmount = baseAmount - discountAmount;
+      const taxAmount = (taxableAmount * tax) / 100;
+      const finalAmount = Math.round((taxableAmount + taxAmount) * 100) / 100;
+
+      return {
+        id: item.id || `li-${idx + 1}`,
+        itemId: item.itemId || undefined,
+        name: item.name.trim() || `Item ${idx + 1}`,
+        quantity: qty,
+        rate: rate,
+        discountPercent: discount,
+        taxPercent: tax,
+        unit: item.unit || 'Pcs',
+        amount: finalAmount,
+      };
+    });
+
     const payload = {
       invoiceNo,
       type: saleModalType,
@@ -398,7 +450,10 @@ export const SaleInvoiceModal: React.FC = () => {
       partyId: activePartyId || undefined,
       partyName: partyName.trim(),
       partyPhone: partyPhone.trim(),
-      items: lineItems,
+      businessPhone: businessPhone.trim(),
+      businessEmail: businessEmail.trim(),
+      businessAddress: businessAddress.trim(),
+      items: cleanedItems,
       subtotal,
       discountTotal,
       taxTotal,
@@ -691,30 +746,90 @@ export const SaleInvoiceModal: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Office & Contact Details (Printed on Tax Invoice - Manually Editable) */}
+              <div className="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-slate-700 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-gray-800 block">
+                        Office & Contact Details (Printed on Tax Invoice)
+                      </span>
+                      <span className="text-[10px] text-gray-500">
+                        Phone: {businessPhone || 'None'} • Email: {businessEmail || 'None'} • Office: {businessAddress ? (businessAddress.length > 30 ? businessAddress.slice(0, 30) + '...' : businessAddress) : 'None'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOfficeDetails(!showOfficeDetails)}
+                    className="text-xs font-bold text-[#e52b44] hover:text-[#c42036] flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-lg shadow-2xs transition-all shrink-0"
+                  >
+                    {showOfficeDetails ? 'Hide' : '✏️ Edit Manual Details'}
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showOfficeDetails ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {showOfficeDetails && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 mt-3 border-t border-slate-200 text-xs">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-700 block mb-1">
+                        Phone Number (Manual)
+                      </label>
+                      <input
+                        type="text"
+                        value={businessPhone}
+                        onChange={(e) => setBusinessPhone(e.target.value)}
+                        placeholder="e.g. 03256181588"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-800 focus:ring-2 focus:ring-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-700 block mb-1">
+                        Email Address (Manual)
+                      </label>
+                      <input
+                        type="email"
+                        value={businessEmail}
+                        onChange={(e) => setBusinessEmail(e.target.value)}
+                        placeholder="e.g. support@example.com"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-800 focus:ring-2 focus:ring-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-700 block mb-1">
+                        Office Address (Manual)
+                      </label>
+                      <input
+                        type="text"
+                        value={businessAddress}
+                        onChange={(e) => setBusinessAddress(e.target.value)}
+                        placeholder="e.g. Shop #14, Commercial Market"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-800 focus:ring-2 focus:ring-sky-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Line Items Table */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider">Items / Products</h3>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsItemModalOpen(true, null)}
-                  className="flex items-center gap-1 text-xs font-bold text-sky-600 hover:text-sky-800 hover:underline"
-                >
-                  <Plus className="w-3.5 h-3.5" /> + New Item
-                </button>
-                <button
-                  type="button"
-                  id="btn-add-item-row"
-                  onClick={addLineItem}
-                  className="flex items-center gap-1 text-xs font-bold text-[#e52b44] hover:underline"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Row
-                </button>
+              <div>
+                <h3 className="font-bold text-gray-800 text-xs uppercase tracking-wider">Items / Products</h3>
+                <p className="text-[10px] text-gray-500 font-medium">Customer can write item name and price manually</p>
               </div>
+              <button
+                type="button"
+                id="btn-add-item-row"
+                onClick={addLineItem}
+                className="flex items-center gap-1 text-xs font-bold text-[#e52b44] hover:underline"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add Row
+              </button>
             </div>
 
             <div className="space-y-2">
@@ -725,17 +840,30 @@ export const SaleInvoiceModal: React.FC = () => {
                 >
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
+                      <input
+                        type="text"
+                        placeholder="Write item name (e.g. Rice 5kg, T-Shirt, Repair)"
+                        value={row.name}
+                        onChange={(e) => updateItemRow(idx, 'name', e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder:font-normal placeholder:text-gray-400 text-xs"
+                      />
+                    </div>
+
+                    <div className="w-24">
                       <select
-                        value={row.itemId}
-                        onChange={(e) => updateItemRow(idx, 'itemId', e.target.value)}
-                        className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg font-semibold text-gray-800"
+                        value={row.unit || 'Pcs'}
+                        onChange={(e) => updateItemRow(idx, 'unit', e.target.value)}
+                        className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 focus:ring-2 focus:ring-sky-500"
                       >
-                        <option value="">-- Choose Stock Item or Type --</option>
-                        {stockItems.map((si) => (
-                          <option key={si.id} value={si.id}>
-                            {si.name} (Stock: {si.stockQuantity} {si.unit} • Price: Rs {si.salePrice})
-                          </option>
-                        ))}
+                        <option value="Pcs">Pcs</option>
+                        <option value="Kg">Kg</option>
+                        <option value="Gram">Gram</option>
+                        <option value="Ltr">Ltr</option>
+                        <option value="Box">Box</option>
+                        <option value="Pack">Pack</option>
+                        <option value="Mtr">Mtr</option>
+                        <option value="Dozen">Dozen</option>
+                        <option value="Service">Service</option>
                       </select>
                     </div>
 
@@ -743,7 +871,8 @@ export const SaleInvoiceModal: React.FC = () => {
                       type="button"
                       onClick={() => removeLineItem(idx)}
                       disabled={lineItems.length === 1}
-                      className="text-gray-400 hover:text-rose-600 p-1.5 disabled:opacity-30"
+                      className="text-gray-400 hover:text-rose-600 p-1.5 disabled:opacity-30 rounded hover:bg-rose-50"
+                      title="Remove row"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -751,39 +880,59 @@ export const SaleInvoiceModal: React.FC = () => {
 
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <label className="text-[10px] text-gray-500 block">Quantity</label>
+                      <label className="text-[10px] text-gray-500 block font-medium">Quantity</label>
                       <input
-                        type="number"
-                        min="1"
-                        value={row.quantity}
-                        onChange={(e) => updateItemRow(idx, 'quantity', Number(e.target.value))}
-                        className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-center font-bold"
+                        type="text"
+                        inputMode="decimal"
+                        value={row.quantity ?? ''}
+                        placeholder="1"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                            updateItemRow(idx, 'quantity', val);
+                          }
+                        }}
+                        className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-center font-bold text-gray-800 focus:ring-2 focus:ring-sky-500 text-xs"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-gray-500 block">Rate (Rs)</label>
+                      <label className="text-[10px] text-gray-700 block font-bold">Price / Rate (Rs)</label>
                       <input
-                        type="number"
-                        value={row.rate}
-                        onChange={(e) => updateItemRow(idx, 'rate', Number(e.target.value))}
-                        className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-right font-bold"
+                        type="text"
+                        inputMode="decimal"
+                        value={row.rate ?? ''}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                            updateItemRow(idx, 'rate', val);
+                          }
+                        }}
+                        className="w-full px-2 py-1 bg-white border border-gray-300 focus:border-sky-500 rounded-lg text-right font-bold text-gray-900 focus:ring-2 focus:ring-sky-500 text-xs shadow-xs"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-gray-500 block">Discount %</label>
+                      <label className="text-[10px] text-gray-500 block font-medium">Discount %</label>
                       <input
-                        type="number"
-                        value={row.discountPercent}
-                        onChange={(e) => updateItemRow(idx, 'discountPercent', Number(e.target.value))}
-                        className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-right"
+                        type="text"
+                        inputMode="decimal"
+                        value={row.discountPercent ?? ''}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                            updateItemRow(idx, 'discountPercent', val);
+                          }
+                        }}
+                        className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-right font-medium text-gray-700 focus:ring-2 focus:ring-sky-500 text-xs"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-gray-500 block">Total (Rs)</label>
-                      <div className="px-2 py-1 bg-gray-100 border border-gray-200 rounded-lg text-right font-bold text-gray-900">
+                      <label className="text-[10px] text-gray-500 block font-medium">Total (Rs)</label>
+                      <div className="px-2 py-1 bg-gray-100 border border-gray-200 rounded-lg text-right font-bold text-gray-900 text-xs flex items-center justify-end h-7">
                         {row.amount.toFixed(2)}
                       </div>
                     </div>

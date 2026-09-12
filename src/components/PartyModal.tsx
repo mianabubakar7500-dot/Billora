@@ -16,7 +16,6 @@ export const PartyModal: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [type, setType] = useState<'Customer' | 'Supplier'>('Customer');
-  const [gstin, setGstin] = useState('');
   const [billingAddress, setBillingAddress] = useState('');
   const [openingBalance, setOpeningBalance] = useState<number | string>(0);
   const [balanceType, setBalanceType] = useState<'to_receive' | 'to_pay'>('to_receive');
@@ -29,7 +28,6 @@ export const PartyModal: React.FC = () => {
       setPhone(editingParty.phone || '');
       setEmail(editingParty.email || '');
       setType(editingParty.type);
-      setGstin(editingParty.gstin || '');
       setBillingAddress(editingParty.billingAddress || '');
       setOpeningBalance(editingParty.openingBalance || 0);
       setBalanceType(editingParty.balanceType || 'to_receive');
@@ -38,7 +36,6 @@ export const PartyModal: React.FC = () => {
       setPhone('');
       setEmail('');
       setType('Customer');
-      setGstin('');
       setBillingAddress('');
       setOpeningBalance(0);
       setBalanceType('to_receive');
@@ -66,7 +63,6 @@ export const PartyModal: React.FC = () => {
         phone: phone.trim(),
         email: email.trim(),
         type,
-        gstin: gstin.trim(),
         billingAddress: billingAddress.trim(),
         openingBalance: parsedOpeningBalance,
         balanceType,
@@ -78,7 +74,6 @@ export const PartyModal: React.FC = () => {
         phone: phone.trim(),
         email: email.trim(),
         type,
-        gstin: gstin.trim(),
         billingAddress: billingAddress.trim(),
         openingBalance: parsedOpeningBalance,
         balanceType,
@@ -214,24 +209,6 @@ export const PartyModal: React.FC = () => {
                 placeholder="Shop #, Market, City"
                 value={billingAddress}
                 onChange={(e) => setBillingAddress(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
-          </div>
-
-          {/* GSTIN / TIN */}
-          <div className="space-y-1">
-            <label className="font-bold text-gray-700 flex items-center justify-between">
-              <span>GSTIN / Tax ID</span>
-              <span className="text-gray-400 text-[10px] font-normal">Optional</span>
-            </label>
-            <div className="relative">
-              <ShieldCheck className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="e.g. NTN or STRN"
-                value={gstin}
-                onChange={(e) => setGstin(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>

@@ -499,11 +499,6 @@ export const MobileHome: React.FC = () => {
               <p>
                 <strong>Address:</strong> {selectedPartyForDetail.billingAddress || 'Not set'}
               </p>
-              {selectedPartyForDetail.gstin && (
-                <p>
-                  <strong>GSTIN/TIN:</strong> {selectedPartyForDetail.gstin}
-                </p>
-              )}
             </div>
 
             <h4 className="font-bold text-xs text-gray-700 mt-4 mb-2">Transactions History</h4>

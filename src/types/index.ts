@@ -24,6 +24,9 @@ export interface Transaction {
   partyId?: string;
   partyName: string;
   partyPhone?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  businessAddress?: string;
   items: TransactionItem[];
   subtotal: number;
   discountTotal: number;

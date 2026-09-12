@@ -48,23 +48,6 @@ export const PartySettingsModal: React.FC = () => {
 
         {/* Settings List (Screenshot 2 exact match) */}
         <div className="flex-1 overflow-y-auto divide-y divide-gray-100 text-sm">
-          {/* TIN number */}
-          <div className="flex items-center justify-between px-4 py-4 hover:bg-gray-50/70 transition-colors">
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-gray-800 text-[14px]">TIN number</span>
-              <Info className="w-4 h-4 text-gray-400" />
-            </div>
-            <button
-              type="button"
-              onClick={() => updateSettings({ tinEnabled: !settings.tinEnabled })}
-              className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
-                settings.tinEnabled ? 'bg-blue-600 justify-end' : 'bg-gray-300 justify-start'
-              }`}
-            >
-              <div className="bg-white w-4 h-4 rounded-full shadow-md"></div>
-            </button>
-          </div>
-
           {/* Party Grouping */}
           <div className="flex items-center justify-between px-4 py-4 hover:bg-gray-50/70 transition-colors">
             <div className="flex items-center gap-1.5">
