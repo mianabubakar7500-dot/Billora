@@ -268,11 +268,17 @@ export const MobileHome: React.FC = () => {
                   id={`txn-card-${txn.id}`}
                   className="bg-white rounded-2xl p-3.5 border border-gray-200/80 shadow-xs hover:border-gray-300 transition-all relative"
                 >
-                  {/* Top row */}
-                  <div className="flex items-start justify-between">
+                  {/* Top row - Clickable to open invoice preview */}
+                  <div
+                    onClick={() => setIsPrintModalOpen(true, txn)}
+                    className="flex items-start justify-between cursor-pointer active:opacity-75 transition-opacity"
+                    title="Click to view/print invoice"
+                  >
                     <div>
-                      <h4 className="font-bold text-gray-900 text-base">{txn.partyName}</h4>
-                      <div className="mt-0.5">
+                      <h4 className="font-bold text-gray-900 text-base flex items-center gap-1.5">
+                        <span>{txn.partyName}</span>
+                      </h4>
+                      <div className="mt-0.5 flex items-center gap-1">
                         <span
                           className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
                             isSale
@@ -287,10 +293,13 @@ export const MobileHome: React.FC = () => {
                           {txn.type}
                         </span>
                         {txn.isQuotationConverted && (
-                          <span className="ml-1 text-[9px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-200">
+                          <span className="text-[9px] bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded border border-purple-200">
                             Converted
                           </span>
                         )}
+                        <span className="text-[10px] text-sky-600 font-semibold underline ml-1">
+                          View Invoice
+                        </span>
                       </div>
                     </div>
 
@@ -302,7 +311,10 @@ export const MobileHome: React.FC = () => {
 
                   {/* Middle row: Total and Balance (Screenshot 1 exact match) */}
                   <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-100">
-                    <div className="flex items-center gap-6">
+                    <div
+                      onClick={() => setIsPrintModalOpen(true, txn)}
+                      className="flex items-center gap-6 cursor-pointer"
+                    >
                       <div>
                         <span className="text-[11px] text-gray-500 block">Total</span>
                         <span className="text-sm font-bold text-gray-800">
@@ -325,7 +337,10 @@ export const MobileHome: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       <button
                         id={`btn-edit-txn-${txn.id}`}
-                        onClick={() => setIsSaleModalOpen(true, txn.type, txn)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsSaleModalOpen(true, txn.type, txn);
+                        }}
                         title="Edit Invoice"
                         className="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors"
                       >
@@ -334,7 +349,10 @@ export const MobileHome: React.FC = () => {
 
                       <button
                         id={`btn-print-txn-${txn.id}`}
-                        onClick={() => setIsPrintModalOpen(true, txn)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsPrintModalOpen(true, txn);
+                        }}
                         title="Print Invoice"
                         className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                       >

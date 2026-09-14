@@ -878,7 +878,7 @@ export const SaleInvoiceModal: React.FC = () => {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div>
                       <label className="text-[10px] text-gray-500 block font-medium">Quantity</label>
                       <input
@@ -892,7 +892,7 @@ export const SaleInvoiceModal: React.FC = () => {
                             updateItemRow(idx, 'quantity', val);
                           }
                         }}
-                        className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-center font-bold text-gray-800 focus:ring-2 focus:ring-sky-500 text-xs"
+                        className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-center font-bold text-gray-800 focus:ring-2 focus:ring-sky-500 text-xs"
                       />
                     </div>
 
@@ -909,7 +909,7 @@ export const SaleInvoiceModal: React.FC = () => {
                             updateItemRow(idx, 'rate', val);
                           }
                         }}
-                        className="w-full px-2 py-1 bg-white border border-gray-300 focus:border-sky-500 rounded-lg text-right font-bold text-gray-900 focus:ring-2 focus:ring-sky-500 text-xs shadow-xs"
+                        className="w-full px-2.5 py-1.5 bg-white border border-gray-300 focus:border-sky-500 rounded-lg text-right font-bold text-gray-900 focus:ring-2 focus:ring-sky-500 text-xs shadow-xs"
                       />
                     </div>
 
@@ -926,14 +926,14 @@ export const SaleInvoiceModal: React.FC = () => {
                             updateItemRow(idx, 'discountPercent', val);
                           }
                         }}
-                        className="w-full px-2 py-1 bg-white border border-gray-200 rounded-lg text-right font-medium text-gray-700 focus:ring-2 focus:ring-sky-500 text-xs"
+                        className="w-full px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-right font-medium text-gray-700 focus:ring-2 focus:ring-sky-500 text-xs"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] text-gray-500 block font-medium">Total (Rs)</label>
-                      <div className="px-2 py-1 bg-gray-100 border border-gray-200 rounded-lg text-right font-bold text-gray-900 text-xs flex items-center justify-end h-7">
-                        {row.amount.toFixed(2)}
+                      <label className="text-[10px] text-gray-500 block font-medium">Total Amount (Rs)</label>
+                      <div className="px-2.5 py-1.5 bg-gray-100 border border-gray-200 rounded-lg text-right font-bold text-gray-900 text-xs flex items-center justify-end h-8">
+                        Rs {row.amount.toFixed(2)}
                       </div>
                     </div>
                   </div>
@@ -1006,23 +1006,23 @@ export const SaleInvoiceModal: React.FC = () => {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-3 border-t border-gray-200 bg-white flex items-center justify-between gap-2">
+        <div className="p-3 border-t border-gray-200 bg-white flex items-center justify-between gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2.5 text-gray-600 text-xs font-semibold hover:bg-gray-100 rounded-xl"
+            className="px-3 sm:px-4 py-2 sm:py-2.5 text-gray-600 text-xs font-semibold hover:bg-gray-100 rounded-xl shrink-0"
           >
             Cancel
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               id="btn-save-and-print"
               onClick={() => handleSaveInvoice(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 border border-sky-600 text-sky-600 hover:bg-sky-50 rounded-xl font-bold text-xs shadow-xs transition-colors"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 border border-sky-600 text-sky-600 hover:bg-sky-50 rounded-xl font-bold text-[11px] sm:text-xs shadow-xs transition-colors whitespace-nowrap"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>{isEditing ? 'Update & Print' : 'Save & Print'}</span>
             </button>
 
@@ -1030,9 +1030,9 @@ export const SaleInvoiceModal: React.FC = () => {
               type="button"
               id="btn-save-invoice"
               onClick={() => handleSaveInvoice(false)}
-              className="flex items-center gap-1.5 px-6 py-2.5 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-xl font-bold text-xs shadow-md transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 sm:px-6 py-2 sm:py-2.5 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-xl font-bold text-[11px] sm:text-xs shadow-md transition-all active:scale-95 whitespace-nowrap"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>{isEditing ? 'Update Invoice' : 'Save Invoice'}</span>
             </button>
           </div>

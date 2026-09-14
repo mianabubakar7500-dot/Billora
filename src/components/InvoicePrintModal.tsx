@@ -6,12 +6,15 @@ import {
   Download,
   ArrowLeft,
   Check,
-  QrCode,
-  Sparkles,
   ExternalLink,
   Loader2,
   AlertCircle,
   Pencil,
+  Smartphone,
+  Monitor,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
 } from 'lucide-react';
 import {
   printInvoice,
@@ -39,6 +42,10 @@ export const InvoicePrintModal: React.FC = () => {
   const [manualEmail, setManualEmail] = useState(txn?.businessEmail || businessProfile.email || '');
   const [manualAddress, setManualAddress] = useState(txn?.businessAddress || businessProfile.address || '');
   const [isEditingDetails, setIsEditingDetails] = useState(false);
+
+  // Mobile layout mode: 'FIT' (responsive mobile fit) or 'LAPTOP' (exact laptop 760px A4 sheet)
+  const [mobileViewMode, setMobileViewMode] = useState<'FIT' | 'LAPTOP'>('FIT');
+  const [laptopZoom, setLaptopZoom] = useState<number>(100);
 
   React.useEffect(() => {
     if (txn) {
@@ -162,112 +169,198 @@ Thank you for doing business with us!`;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-0 sm:p-4 overflow-y-auto print-container-parent">
-      <div className="bg-white w-full max-w-3xl min-h-screen sm:min-h-0 sm:rounded-2xl shadow-2xl flex flex-col max-h-screen sm:max-h-[96vh] overflow-hidden">
+      <div className="bg-white w-full max-w-4xl min-h-screen sm:min-h-0 sm:rounded-2xl shadow-2xl flex flex-col max-h-screen sm:max-h-[96vh] overflow-hidden">
         {/* Modal Top Control Bar (Hidden during print) */}
-        <div className="no-print px-4 py-3 bg-gray-900 text-white flex flex-wrap items-center justify-between gap-2 sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsPrintModalOpen(false)}
-              className="p-1 text-gray-300 hover:text-white rounded-full transition-colors"
-              title="Close Preview"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div>
-              <h3 className="font-bold text-sm">Invoice Preview & Print</h3>
-              <span className="text-[11px] text-gray-400">
-                #{txn.invoiceNo} • {txn.partyName}
-              </span>
+        <div className="no-print bg-gray-900 text-white sticky top-0 z-20 shadow-md">
+          {/* Main Top Header: Title, Party info, Primary Print button */}
+          <div className="px-3 sm:px-4 py-2.5 flex items-center justify-between border-b border-gray-800">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                onClick={() => setIsPrintModalOpen(false)}
+                className="p-1.5 text-gray-300 hover:text-white hover:bg-gray-800 rounded-full transition-colors shrink-0"
+                title="Close Preview"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-sm text-white truncate">Invoice Preview</h3>
+                  <span className="hidden sm:inline-block px-2 py-0.5 bg-red-600/30 border border-red-500/40 text-red-300 text-[10px] font-bold rounded">
+                    {txn.type}
+                  </span>
+                </div>
+                <span className="text-[11px] text-gray-400 block truncate">
+                  #{txn.invoiceNo} • {txn.partyName}
+                </span>
+              </div>
+            </div>
+
+            {/* Primary Print Button */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handlePrint}
+                disabled={isPrinting}
+                className="flex items-center gap-1.5 px-3.5 sm:px-5 py-2 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-60"
+              >
+                {isPrinting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Printer className="w-4 h-4" />
+                )}
+                <span>Print Invoice</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Edit Invoice Button */}
-            <button
-              id="btn-edit-invoice-from-print"
-              onClick={() => {
-                setIsPrintModalOpen(false);
-                setIsSaleModalOpen(true, txn.type, txn);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
-              title="Edit this invoice"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-              <span>Edit Invoice</span>
-            </button>
-
+          {/* Secondary Action Toolbar: Responsive Scrollable Pills */}
+          <div className="px-3 sm:px-4 py-2 bg-gray-950 flex items-center gap-2 overflow-x-auto no-scrollbar text-xs">
             {/* Format toggle: A4 vs Thermal */}
-            <div className="flex bg-gray-800 p-0.5 rounded-lg text-xs font-semibold">
+            <div className="flex bg-gray-800 p-0.5 rounded-lg font-semibold shrink-0">
               <button
                 onClick={() => setPrintFormat('A4')}
-                className={`px-3 py-1 rounded-md transition-all ${
-                  printFormat === 'A4' ? 'bg-sky-600 text-white shadow-xs' : 'text-gray-400 hover:text-white'
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  printFormat === 'A4' ? 'bg-sky-600 text-white shadow-xs font-bold' : 'text-gray-400 hover:text-white'
                 }`}
               >
                 A4 Standard
               </button>
               <button
                 onClick={() => setPrintFormat('THERMAL')}
-                className={`px-3 py-1 rounded-md transition-all ${
-                  printFormat === 'THERMAL' ? 'bg-sky-600 text-white shadow-xs' : 'text-gray-400 hover:text-white'
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  printFormat === 'THERMAL' ? 'bg-sky-600 text-white shadow-xs font-bold' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                3-Inch Thermal
+                3" Thermal
               </button>
             </div>
 
-            {/* WhatsApp Share */}
-            <button
-              onClick={handleShareWhatsApp}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
-              title="Share on WhatsApp"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">WhatsApp</span>
-            </button>
+            {/* Mobile View Toggle (Phone Fit vs Laptop A4 view) */}
+            {printFormat === 'A4' && (
+              <div className="flex items-center bg-gray-800 p-0.5 rounded-lg shrink-0">
+                <button
+                  onClick={() => {
+                    setMobileViewMode('FIT');
+                    setLaptopZoom(100);
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${
+                    mobileViewMode === 'FIT' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'text-gray-400 hover:text-white'
+                  }`}
+                  title="Optimized for Phone screen"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Phone View</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileViewMode('LAPTOP');
+                    setLaptopZoom(100);
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-all ${
+                    mobileViewMode === 'LAPTOP' ? 'bg-indigo-600 text-white font-bold shadow-xs' : 'text-gray-400 hover:text-white'
+                  }`}
+                  title="Exact 760px Laptop sheet layout"
+                >
+                  <Monitor className="w-3.5 h-3.5" />
+                  <span>Laptop View</span>
+                </button>
+              </div>
+            )}
 
-            {/* Download PDF Button */}
+            {/* Laptop Zoom controls (when in LAPTOP mode) */}
+            {printFormat === 'A4' && mobileViewMode === 'LAPTOP' && (
+              <div className="flex items-center bg-gray-800 px-1.5 py-0.5 rounded-lg gap-1 shrink-0 text-[11px] text-gray-300">
+                <button
+                  onClick={() => setLaptopZoom((z) => Math.max(50, z - 15))}
+                  className="p-1 hover:text-white"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <span className="px-1 font-bold text-gray-200">{laptopZoom}%</span>
+                <button
+                  onClick={() => setLaptopZoom((z) => Math.min(150, z + 15))}
+                  className="p-1 hover:text-white"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setLaptopZoom(100)}
+                  className="px-1.5 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-[10px] text-gray-200"
+                >
+                  Reset
+                </button>
+              </div>
+            )}
+
+            {/* Download PDF */}
             <button
               onClick={handleDownloadPDF}
               disabled={isDownloadingPDF}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs disabled:opacity-50"
-              title="Download as PDF file"
+              className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-gray-200 rounded-lg font-bold transition-all shrink-0 border border-slate-700"
+              title="Download as PDF"
             >
               {isDownloadingPDF ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3.5 h-3.5 text-sky-400" />
               )}
               <span>PDF</span>
             </button>
 
-            {/* Open in New Tab Button (Guaranteed for iframe restrictions) */}
+            {/* WhatsApp */}
+            <button
+              onClick={handleShareWhatsApp}
+              className="flex items-center gap-1.5 px-3 py-1 bg-emerald-700/80 hover:bg-emerald-600 text-white rounded-lg font-bold transition-all shrink-0"
+              title="Share via WhatsApp"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>WhatsApp</span>
+            </button>
+
+            {/* Edit Invoice */}
+            <button
+              id="btn-edit-invoice-from-print"
+              onClick={() => {
+                setIsPrintModalOpen(false);
+                setIsSaleModalOpen(true, txn.type, txn);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 bg-amber-600/90 hover:bg-amber-600 text-white rounded-lg font-bold transition-all shrink-0"
+              title="Edit Invoice"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              <span>Edit</span>
+            </button>
+
+            {/* Edit Contact Details (Phone, Email, Address) */}
+            <button
+              type="button"
+              id="btn-toggle-manual-contact"
+              onClick={() => setIsEditingDetails(!isEditingDetails)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-bold transition-all shrink-0 border ${
+                isEditingDetails
+                  ? 'bg-amber-500 text-gray-950 border-amber-400'
+                  : 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700'
+              }`}
+              title="Edit Phone, Email and Office Address"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              <span>{isEditingDetails ? 'Close Details' : 'Details'}</span>
+            </button>
+
+            {/* Open in New Tab */}
             <button
               onClick={handleOpenInNewTab}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-medium transition-all"
-              title="Open standalone print window in new tab"
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-all shrink-0"
+              title="Open full page print in new tab"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">New Tab</span>
             </button>
-
-            {/* Print Button */}
-            <button
-              onClick={handlePrint}
-              disabled={isPrinting}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#e52b44] hover:bg-[#d0243b] text-white rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-60"
-            >
-              {isPrinting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Printer className="w-3.5 h-3.5" />
-              )}
-              <span>Print</span>
-            </button>
           </div>
         </div>
 
-        {/* Status Notification Bar (If action performed) */}
+        {/* Status Notification Bar */}
         {feedbackMsg && (
           <div
             className={`no-print px-4 py-2 text-xs font-medium flex items-center justify-between transition-all ${
@@ -280,9 +373,9 @@ Thank you for doing business with us!`;
           >
             <div className="flex items-center gap-2">
               {feedbackMsg.type === 'success' ? (
-                <Check className="w-4 h-4 text-emerald-600" />
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-sky-600" />
+                <AlertCircle className="w-4 h-4 text-sky-600 shrink-0" />
               )}
               <span>{feedbackMsg.text}</span>
             </div>
@@ -295,44 +388,20 @@ Thank you for doing business with us!`;
           </div>
         )}
 
-        {/* Quick Help Tip */}
-        <div className="no-print bg-amber-50/80 px-4 py-1.5 border-b border-amber-200/60 text-[11px] text-amber-800 flex items-center justify-between">
-          <span>
-            💡 <strong>Vyapar Print Tip:</strong> Click <strong>Print</strong> for direct dialog, or{' '}
-            <strong>PDF</strong> to save directly on mobile/laptop.
-          </span>
-        </div>
-
-        {/* Manual Contact Details Control Bar */}
-        <div className="no-print bg-slate-800 px-4 py-2 text-white flex flex-wrap items-center justify-between gap-2 border-b border-slate-700">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-bold text-amber-400">Invoice Contact Details:</span>
-            <span className="text-slate-300 text-[11px]">
-              Phone: {manualPhone || 'None'} • Email: {manualEmail || 'None'} • Office: {manualAddress ? (manualAddress.length > 25 ? manualAddress.slice(0, 25) + '...' : manualAddress) : 'None'}
-            </span>
-          </div>
-          <button
-            type="button"
-            id="btn-toggle-manual-contact"
-            onClick={() => setIsEditingDetails(!isEditingDetails)}
-            className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-sky-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            <span>{isEditingDetails ? 'Hide Editor' : 'Edit Phone, Email & Address'}</span>
-          </button>
-        </div>
-
         {/* Collapsible Manual Details Editor */}
         {isEditingDetails && (
-          <div className="no-print bg-slate-900 border-b border-slate-700 p-4 text-white animate-fadeIn">
+          <div className="no-print bg-slate-900 border-b border-slate-700 p-3.5 sm:p-4 text-white animate-fadeIn">
             <div className="max-w-3xl mx-auto space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-gray-200">
-                  ✏️ Edit Invoice Details Manually (Updates instantly on Tax Invoice)
+                <h4 className="text-xs font-bold text-gray-200 flex items-center gap-1.5">
+                  <span>✏️</span>
+                  <span>Invoice Contact Details (Phone, Email, Office Address)</span>
                 </h4>
-                <span className="text-[10px] text-emerald-400 font-semibold">GSTIN / TIN Removed</span>
+                <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                  GSTIN / TIN Removed
+                </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
                 <div>
                   <label className="text-[10px] font-bold text-gray-400 block mb-1">Phone Number (Manual)</label>
                   <input
@@ -364,7 +433,7 @@ Thank you for doing business with us!`;
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-2 pt-1">
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => handleSaveDetails(false)}
@@ -384,197 +453,228 @@ Thank you for doing business with us!`;
           </div>
         )}
 
-        {/* Invoice Printable Sheet */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-gray-100 flex justify-center">
+        {/* Invoice Printable Sheet Container */}
+        <div className="flex-1 overflow-y-auto overflow-x-auto p-2 sm:p-6 bg-slate-200/80 flex justify-center items-start">
           {printFormat === 'A4' ? (
-            /* A4 Full Tax Invoice */
+            /* A4 Full Tax Invoice - Rendered cleanly for Phone & Laptop */
             <div
-              id="printable-invoice"
-              className="bg-white w-full max-w-[760px] p-8 rounded-xl shadow-lg border border-gray-200 text-gray-800 text-xs min-h-[900px] flex flex-col justify-between"
+              className={`transition-all duration-200 ${
+                mobileViewMode === 'LAPTOP' ? 'overflow-x-auto flex justify-center w-full' : 'w-full flex justify-center'
+              }`}
             >
-              <div>
-                {/* Header Row */}
-                <div className="flex items-start justify-between border-b-2 border-red-600 pb-4">
-                  <div className="space-y-1 max-w-[60%]">
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-                      {businessProfile.name &&
-                      businessProfile.name.toLowerCase() !== 'billora store' &&
-                      businessProfile.name.toLowerCase() !== 'billora traders'
-                        ? businessProfile.name
-                        : isQuotation
-                        ? 'ESTIMATE / QUOTATION'
-                        : 'TAX INVOICE'}
-                    </h1>
-                    {(manualAddress || businessProfile.address) && (
-                      <p className="text-gray-600 font-medium leading-relaxed">
-                        {manualAddress || businessProfile.address}
-                      </p>
-                    )}
-                    {(manualPhone || businessProfile.phone1) && (
-                      <p className="text-gray-600">
-                        <strong>Phone:</strong> {manualPhone || businessProfile.phone1}
-                      </p>
-                    )}
-                    {(manualEmail || businessProfile.email) && (
-                      <p className="text-gray-600">
-                        <strong>Email:</strong> {manualEmail || businessProfile.email}
-                      </p>
-                    )}
+              <div
+                id="printable-invoice"
+                style={
+                  mobileViewMode === 'LAPTOP'
+                    ? {
+                        width: '760px',
+                        minWidth: '760px',
+                        transform: laptopZoom !== 100 ? `scale(${laptopZoom / 100})` : undefined,
+                        transformOrigin: 'top center',
+                        marginBottom: laptopZoom < 100 ? `-${(100 - laptopZoom) * 9}px` : undefined,
+                      }
+                    : undefined
+                }
+                className={`bg-white w-full max-w-[760px] p-4 sm:p-8 rounded-xl shadow-lg border border-gray-300/80 text-gray-800 text-xs min-h-[850px] flex flex-col justify-between transition-all`}
+              >
+                <div>
+                  {/* Header Row: Company Title & Address on Left, Invoice Badge & Metadata on Right */}
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between border-b-2 border-red-600 pb-3.5 sm:pb-4 gap-3 sm:gap-4">
+                    <div className="space-y-1 sm:max-w-[62%]">
+                      <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                        {businessProfile.name &&
+                        businessProfile.name.toLowerCase() !== 'billora store' &&
+                        businessProfile.name.toLowerCase() !== 'billora traders'
+                          ? businessProfile.name
+                          : isQuotation
+                          ? 'ESTIMATE / QUOTATION'
+                          : 'TAX INVOICE'}
+                      </h1>
+                      {(manualAddress || businessProfile.address) && (
+                        <p className="text-gray-600 font-medium leading-relaxed text-xs">
+                          {manualAddress || businessProfile.address}
+                        </p>
+                      )}
+                      {(manualPhone || businessProfile.phone1) && (
+                        <p className="text-gray-600 text-xs">
+                          <strong className="text-gray-800">Phone:</strong> {manualPhone || businessProfile.phone1}
+                        </p>
+                      )}
+                      {(manualEmail || businessProfile.email) && (
+                        <p className="text-gray-600 text-xs">
+                          <strong className="text-gray-800">Email:</strong> {manualEmail || businessProfile.email}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex flex-row sm:flex-col justify-between sm:justify-start items-start sm:items-end text-left sm:text-right bg-red-50/60 sm:bg-transparent p-2.5 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-red-200/60">
+                      <div>
+                        <div className="inline-block px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded font-black text-xs sm:text-sm tracking-wider uppercase">
+                          {isQuotation ? 'ESTIMATE / QUOTATION' : isSale ? 'TAX INVOICE' : txn.type}
+                        </div>
+                        <p className="text-[10px] text-gray-500 font-semibold block mt-0.5">ORIGINAL FOR RECIPIENT</p>
+                      </div>
+                      <div className="sm:pt-2 text-xs text-right sm:text-right">
+                        <p className="font-bold text-gray-900">
+                          Invoice No: <span className="text-red-600 font-black">#{txn.invoiceNo}</span>
+                        </p>
+                        <p className="text-gray-600">Date: {txn.date}</p>
+                        <p className="text-gray-600">Mode: {txn.paymentMode}</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="text-right space-y-1">
-                    <div className="inline-block px-3 py-1 bg-red-50 text-red-700 border border-red-200 rounded font-black text-sm tracking-wider uppercase">
-                      {isQuotation ? 'ESTIMATE / QUOTATION' : isSale ? 'TAX INVOICE' : txn.type}
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-semibold">ORIGINAL FOR RECIPIENT</p>
-                    <div className="pt-2">
-                      <p className="font-bold text-gray-900">
-                        Invoice No: <span className="text-red-600">#{txn.invoiceNo}</span>
-                      </p>
-                      <p className="text-gray-600">Date: {txn.date}</p>
-                      <p className="text-gray-600">Mode: {txn.paymentMode}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Billed To / Party Details */}
-                <div className="grid grid-cols-2 gap-4 py-4 border-b border-gray-200 bg-gray-50/50 px-3 rounded-lg my-3">
-                  <div>
-                    <span className="text-[10px] font-bold text-gray-500 uppercase">Billed To (Customer):</span>
-                    <h3 className="text-sm font-bold text-gray-900 mt-0.5">{txn.partyName}</h3>
-                    {txn.partyPhone && <p className="text-gray-600">Phone: {txn.partyPhone}</p>}
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase">Payment Status:</span>
-                    <div className="mt-1">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-bold uppercase ${
-                          txn.status === 'PAID'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : txn.status === 'PARTIAL'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-rose-100 text-rose-800'
-                        }`}
-                      >
-                        {txn.status}
+                  {/* Billed To / Party Details & Payment Status */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4 py-3 sm:py-3.5 border-b border-gray-200 bg-gray-50/70 px-3.5 rounded-xl my-3 border border-gray-100">
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                        Billed To (Customer):
                       </span>
+                      <h3 className="text-sm font-bold text-gray-900 mt-0.5">{txn.partyName}</h3>
+                      {txn.partyPhone && <p className="text-gray-600 text-xs mt-0.5">Phone: {txn.partyPhone}</p>}
                     </div>
-                  </div>
-                </div>
-
-                {/* Items Table */}
-                <table className="w-full text-left border-collapse my-3">
-                  <thead>
-                    <tr className="bg-gray-800 text-white text-[11px]">
-                      <th className="py-2 px-2.5 rounded-l">#</th>
-                      <th className="py-2 px-2.5">Item Description</th>
-                      <th className="py-2 px-2.5 text-center">Qty</th>
-                      <th className="py-2 px-2.5 text-right">Rate (Rs)</th>
-                      <th className="py-2 px-2.5 text-center">Tax %</th>
-                      <th className="py-2 px-2.5 text-right rounded-r">Amount (Rs)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {txn.items.map((item, index) => (
-                      <tr key={item.id || index} className="hover:bg-gray-50/80">
-                        <td className="py-2 px-2.5 text-gray-500">{index + 1}</td>
-                        <td className="py-2 px-2.5 font-bold text-gray-900">{item.name}</td>
-                        <td className="py-2 px-2.5 text-center font-semibold">
-                          {item.quantity} {item.unit}
-                        </td>
-                        <td className="py-2 px-2.5 text-right">{item.rate.toFixed(2)}</td>
-                        <td className="py-2 px-2.5 text-center">{item.taxPercent || 0}%</td>
-                        <td className="py-2 px-2.5 text-right font-bold text-gray-900">
-                          {item.amount.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Subtotals & Grand Total Breakdown */}
-                <div className="flex justify-end pt-2">
-                  <div className="w-64 space-y-1.5 text-xs">
-                    <div className="flex justify-between py-1 border-b border-gray-100 text-gray-600">
-                      <span>Sub Total:</span>
-                      <span className="font-semibold">Rs {txn.subtotal.toFixed(2)}</span>
-                    </div>
-
-                    {txn.discountTotal > 0 && (
-                      <div className="flex justify-between py-1 border-b border-gray-100 text-rose-600">
-                        <span>Discount:</span>
-                        <span className="font-semibold">- Rs {txn.discountTotal.toFixed(2)}</span>
+                    <div className="flex sm:flex-col sm:items-end justify-between sm:justify-start items-center">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                        Payment Status:
+                      </span>
+                      <div className="mt-0.5 sm:mt-1">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-bold uppercase ${
+                            txn.status === 'PAID'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : txn.status === 'PARTIAL'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                              : 'bg-rose-100 text-rose-800 border border-rose-300'
+                          }`}
+                        >
+                          {txn.status}
+                        </span>
                       </div>
-                    )}
+                    </div>
+                  </div>
 
-                    {txn.taxTotal > 0 && (
-                      <div className="flex justify-between py-1 border-b border-gray-100 text-sky-700">
-                        <span>GST / Taxes:</span>
-                        <span className="font-semibold">+ Rs {txn.taxTotal.toFixed(2)}</span>
+                  {/* Items Table - Clean responsive layout with scroll container for mobile */}
+                  <div className="overflow-x-auto -mx-1 sm:mx-0 my-3 rounded-lg border border-gray-200 sm:border-0">
+                    <table className="w-full min-w-[500px] sm:min-w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-800 text-white text-[11px]">
+                          <th className="py-2.5 px-3 rounded-l">#</th>
+                          <th className="py-2.5 px-3">Item Description</th>
+                          <th className="py-2.5 px-3 text-center">Qty</th>
+                          <th className="py-2.5 px-3 text-right">Rate (Rs)</th>
+                          <th className="py-2.5 px-3 text-center">Tax %</th>
+                          <th className="py-2.5 px-3 text-right rounded-r">Amount (Rs)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 text-xs">
+                        {txn.items.map((item, index) => (
+                          <tr key={item.id || index} className="hover:bg-gray-50/80">
+                            <td className="py-2 px-3 text-gray-500 font-medium">{index + 1}</td>
+                            <td className="py-2 px-3 font-bold text-gray-900">{item.name}</td>
+                            <td className="py-2 px-3 text-center font-semibold text-gray-800 whitespace-nowrap">
+                              {item.quantity} {item.unit}
+                            </td>
+                            <td className="py-2 px-3 text-right text-gray-800 whitespace-nowrap">
+                              Rs {item.rate.toFixed(2)}
+                            </td>
+                            <td className="py-2 px-3 text-center text-gray-700 whitespace-nowrap">
+                              {item.taxPercent || 0}%
+                            </td>
+                            <td className="py-2 px-3 text-right font-bold text-gray-900 whitespace-nowrap">
+                              Rs {item.amount.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Subtotals & Grand Total Breakdown */}
+                  <div className="flex justify-end pt-2">
+                    <div className="w-full sm:w-72 space-y-1.5 text-xs bg-gray-50/70 sm:bg-transparent p-3 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-gray-200">
+                      <div className="flex justify-between py-1 border-b border-gray-200 text-gray-600">
+                        <span>Sub Total:</span>
+                        <span className="font-semibold">Rs {txn.subtotal.toFixed(2)}</span>
                       </div>
-                    )}
 
-                    <div className="flex justify-between py-1.5 border-y-2 border-gray-900 font-black text-sm text-gray-900">
-                      <span>Total:</span>
-                      <span className="text-red-600">Rs {txn.totalAmount.toFixed(2)}</span>
-                    </div>
+                      {txn.discountTotal > 0 && (
+                        <div className="flex justify-between py-1 border-b border-gray-200 text-rose-600">
+                          <span>Discount:</span>
+                          <span className="font-semibold">- Rs {txn.discountTotal.toFixed(2)}</span>
+                        </div>
+                      )}
 
-                    <div className="flex justify-between py-1 text-gray-600">
-                      <span>Received Amount:</span>
-                      <span className="font-bold text-emerald-700">Rs {txn.amountReceived.toFixed(2)}</span>
-                    </div>
+                      {txn.taxTotal > 0 && (
+                        <div className="flex justify-between py-1 border-b border-gray-200 text-sky-700">
+                          <span>GST / Taxes:</span>
+                          <span className="font-semibold">+ Rs {txn.taxTotal.toFixed(2)}</span>
+                        </div>
+                      )}
 
-                    <div className="flex justify-between py-1 font-bold text-gray-800 bg-amber-50 px-2 rounded">
-                      <span>Balance Due:</span>
-                      <span className="text-amber-800">Rs {txn.balanceDue.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                      <div className="flex justify-between py-1.5 border-y-2 border-gray-900 font-black text-sm text-gray-900">
+                        <span>Total:</span>
+                        <span className="text-red-600">Rs {txn.totalAmount.toFixed(2)}</span>
+                      </div>
 
-              {/* Bottom Footer Section: Bank Details, Terms & Signatory */}
-              <div className="pt-8 border-t border-gray-200 mt-8 space-y-4">
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Bank & Payment Info */}
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-[11px] space-y-1">
-                    <span className="font-bold text-gray-700 uppercase block">Bank Details & UPI</span>
-                    <p>
-                      <strong>Bank:</strong> {businessProfile.bankName || 'HBL / Allied Bank'}
-                    </p>
-                    <p>
-                      <strong>A/C No:</strong> {businessProfile.accountNumber || '1029384756'}
-                    </p>
-                    <p>
-                      <strong>IFSC / Branch:</strong> {businessProfile.ifscCode || 'HBL001'}
-                    </p>
-                    <p>
-                      <strong>UPI ID:</strong> {businessProfile.upiId || 'billora@bank'}
-                    </p>
-                  </div>
+                      <div className="flex justify-between py-1 text-gray-600">
+                        <span>Received Amount:</span>
+                        <span className="font-bold text-emerald-700">Rs {txn.amountReceived.toFixed(2)}</span>
+                      </div>
 
-                  {/* Signatory */}
-                  <div className="flex flex-col justify-end items-end text-center">
-                    {businessProfile.signatureUrl ? (
-                      <img
-                        src={businessProfile.signatureUrl}
-                        alt="Signature"
-                        className="max-h-14 object-contain mb-1"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="h-14"></div>
-                    )}
-                    <div className="w-48 border-t border-gray-400 pt-1 text-center">
-                      <span className="font-bold text-gray-900 block">{businessProfile.name}</span>
-                      <span className="text-[10px] text-gray-500">Authorized Signatory</span>
+                      <div className="flex justify-between py-1 font-bold text-gray-800 bg-amber-50 px-2 rounded border border-amber-200">
+                        <span>Balance Due:</span>
+                        <span className="text-amber-800 font-black">Rs {txn.balanceDue.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Terms */}
-                <div className="text-[10px] text-gray-500 pt-2 border-t border-gray-100">
-                  <span className="font-bold text-gray-700">Terms & Conditions:</span>
-                  <p className="whitespace-pre-line leading-relaxed">{businessProfile.terms}</p>
+                {/* Bottom Footer Section: Bank Details, Terms & Signatory */}
+                <div className="pt-6 sm:pt-8 border-t border-gray-200 mt-6 sm:mt-8 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    {/* Bank & Payment Info */}
+                    <div className="bg-gray-50 p-3.5 rounded-xl border border-gray-200 text-[11px] space-y-1">
+                      <span className="font-bold text-gray-800 uppercase tracking-wider block">
+                        Bank Details & UPI
+                      </span>
+                      <p>
+                        <strong className="text-gray-700">Bank:</strong> {businessProfile.bankName || 'HBL / Allied Bank'}
+                      </p>
+                      <p>
+                        <strong className="text-gray-700">A/C No:</strong> {businessProfile.accountNumber || '1029384756'}
+                      </p>
+                      <p>
+                        <strong className="text-gray-700">IFSC / Branch:</strong> {businessProfile.ifscCode || 'HBL001'}
+                      </p>
+                      <p>
+                        <strong className="text-gray-700">UPI ID:</strong> {businessProfile.upiId || 'billora@bank'}
+                      </p>
+                    </div>
+
+                    {/* Signatory */}
+                    <div className="flex flex-col justify-end items-center sm:items-end text-center pt-2 sm:pt-0">
+                      {businessProfile.signatureUrl ? (
+                        <img
+                          src={businessProfile.signatureUrl}
+                          alt="Signature"
+                          className="max-h-14 object-contain mb-1"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="h-10 sm:h-14"></div>
+                      )}
+                      <div className="w-52 border-t border-gray-400 pt-1 text-center">
+                        <span className="font-bold text-gray-900 block text-xs">{businessProfile.name}</span>
+                        <span className="text-[10px] text-gray-500">Authorized Signatory</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Terms */}
+                  <div className="text-[10px] text-gray-500 pt-2 border-t border-gray-100">
+                    <span className="font-bold text-gray-700">Terms & Conditions:</span>
+                    <p className="whitespace-pre-line leading-relaxed mt-0.5">{businessProfile.terms}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -582,7 +682,7 @@ Thank you for doing business with us!`;
             /* 3-Inch Thermal Receipt Format */
             <div
               id="printable-invoice"
-              className="bg-white w-[320px] p-4 rounded-xl shadow-lg border border-gray-300 font-mono text-[11px] leading-tight flex flex-col justify-between"
+              className="bg-white w-[320px] p-4 rounded-xl shadow-lg border border-gray-300 font-mono text-[11px] leading-tight flex flex-col justify-between my-auto"
             >
               <div className="text-center space-y-1 border-b border-dashed border-gray-400 pb-2">
                 {businessProfile.name &&
