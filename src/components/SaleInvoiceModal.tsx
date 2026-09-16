@@ -24,8 +24,6 @@ import {
   MapPin,
 } from 'lucide-react';
 
-const STORAGE_KEY_LAST_CUSTOMER = 'billora_last_customer_v1';
-
 export interface EditableTransactionItem {
   id: string;
   itemId?: string;
@@ -192,7 +190,7 @@ export const SaleInvoiceModal: React.FC = () => {
       console.warn('Could not restore draft:', e);
     }
 
-    // 3. Brand New Invoice: Auto-attach last customer or first customer so user doesn't have to re-enter
+    // Brand New Invoice: Start completely blank for full manual entry
     setInvoiceNo(defaultInvoiceNo);
     setDate(
       new Date().toLocaleDateString('en-GB', {
@@ -203,22 +201,10 @@ export const SaleInvoiceModal: React.FC = () => {
     );
     setNotes('');
 
-    // Check last used customer from localStorage
-    const lastCustomerId = localStorage.getItem(STORAGE_KEY_LAST_CUSTOMER);
-    const matchedCustomer =
-      (lastCustomerId ? parties.find((p) => p.id === lastCustomerId) : null) ||
-      (isPurchase ? parties.find((p) => p.type === 'Supplier') : parties.find((p) => p.type === 'Customer')) ||
-      parties[0];
-
-    if (matchedCustomer) {
-      setSelectedPartyId(matchedCustomer.id);
-      setPartyName(matchedCustomer.name);
-      setPartyPhone(matchedCustomer.phone);
-    } else {
-      setSelectedPartyId('');
-      setPartyName('');
-      setPartyPhone('');
-    }
+    // Start with empty customer so user / customer enters details manually
+    setSelectedPartyId('');
+    setPartyName('');
+    setPartyPhone('');
 
     setBusinessPhone(businessProfile?.phone1 || '');
     setBusinessEmail(businessProfile?.email || '');
@@ -359,7 +345,6 @@ export const SaleInvoiceModal: React.FC = () => {
     setPartyName(party.name);
     setPartyPhone(party.phone);
     setShowCustomerDropdown(false);
-    localStorage.setItem(STORAGE_KEY_LAST_CUSTOMER, party.id);
   };
 
   const handleDiscardDraft = () => {
@@ -402,9 +387,8 @@ export const SaleInvoiceModal: React.FC = () => {
 
     if (existing) {
       activePartyId = existing.id;
-      localStorage.setItem(STORAGE_KEY_LAST_CUSTOMER, existing.id);
     } else {
-      // Automatically add customer so user never has to add them again
+      // Automatically add customer so user never has to re-type existing info
       const newParty = addParty({
         name: partyName.trim(),
         phone: partyPhone.trim() || '',
@@ -416,7 +400,6 @@ export const SaleInvoiceModal: React.FC = () => {
         loyaltyPoints: 0,
       });
       activePartyId = newParty.id;
-      localStorage.setItem(STORAGE_KEY_LAST_CUSTOMER, newParty.id);
     }
 
     const cleanedItems: TransactionItem[] = lineItems.map((item, idx) => {
@@ -583,17 +566,15 @@ export const SaleInvoiceModal: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Customer Input with Searchable Dropdown */}
+                {/* Customer Input (Direct Manual Entry) */}
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Type or select customer (e.g. Ali)"
+                    placeholder="Enter customer name manually"
                     value={partyName}
-                    onFocus={() => setShowCustomerDropdown(true)}
                     onChange={(e) => {
                       setPartyName(e.target.value);
                       if (customerError) setCustomerError(null);
-                      setShowCustomerDropdown(true);
                       // If typing matches existing party exactly, auto-fill phone
                       const match = parties.find(
                         (p) => p.name.toLowerCase() === e.target.value.toLowerCase()
@@ -611,20 +592,23 @@ export const SaleInvoiceModal: React.FC = () => {
                         : 'border-gray-200 focus:ring-2 focus:ring-sky-500'
                     }`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomerDropdown(!showCustomerDropdown)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
+                  {parties.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomerDropdown(!showCustomerDropdown)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                      title="Select from saved customers"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 {customerError && (
                   <p className="text-[11px] text-rose-600 font-bold mt-1">{customerError}</p>
                 )}
 
-                {/* Customer Dropdown Menu */}
-                {showCustomerDropdown && (
+                {/* Customer Dropdown Menu (only if user explicitly clicks chevron) */}
+                {showCustomerDropdown && parties.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-gray-100 text-xs">
                     <div className="p-2 bg-gray-50 flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                       <span>Saved Customers ({filteredParties.length})</span>
@@ -659,19 +643,9 @@ export const SaleInvoiceModal: React.FC = () => {
                       ))
                     ) : (
                       <div className="p-3 text-center text-gray-400">
-                        No customer found. Typing will save <span className="font-bold text-gray-700">"{partyName}"</span> automatically!
+                        No customer found with that name.
                       </div>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCustomerDropdown(false);
-                        setIsPartyModalOpen(true);
-                      }}
-                      className="w-full py-2 bg-gray-50 hover:bg-sky-50 text-sky-700 font-bold text-center block transition-colors text-xs"
-                    >
-                      + Add New Customer / Party
-                    </button>
                   </div>
                 )}
 
@@ -681,34 +655,13 @@ export const SaleInvoiceModal: React.FC = () => {
                     <Phone className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Customer Phone (e.g. 03256181588)"
+                      placeholder="Customer Phone (optional)"
                       value={partyPhone}
                       onChange={(e) => setPartyPhone(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 font-medium"
+                      className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 font-medium text-xs"
                     />
                   </div>
                 </div>
-
-                {/* Quick Customer Selection Chips */}
-                {parties.length > 0 && (
-                  <div className="mt-2 flex items-center gap-1.5 overflow-x-auto pb-1">
-                    <span className="text-[10px] font-bold text-gray-400 shrink-0">Quick Select:</span>
-                    {parties.slice(0, 4).map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handleSelectCustomer(p)}
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-semibold shrink-0 transition-colors border ${
-                          selectedPartyId === p.id
-                            ? 'bg-sky-600 text-white border-sky-600'
-                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
-                        }`}
-                      >
-                        {p.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Date & Payment Mode */}

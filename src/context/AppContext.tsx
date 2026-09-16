@@ -97,17 +97,62 @@ export const STORAGE_KEY_INVOICE_DRAFT = 'billora_active_invoice_draft_v1';
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_TXN);
-    return saved ? JSON.parse(saved) : initialTransactions;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (t: any) =>
+              t.id !== 'txn-1' &&
+              t.id !== 'txn-2' &&
+              t.id !== 'txn-3' &&
+              t.id !== 'txn-4'
+          );
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return initialTransactions;
   });
 
   const [parties, setParties] = useState<Party[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PARTIES);
-    return saved ? JSON.parse(saved) : initialParties;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (p: any) => p.id !== 'p-1' && p.id !== 'p-2' && p.id !== 'p-3'
+          );
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return initialParties;
   });
 
   const [items, setItems] = useState<Item[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_ITEMS);
-    return saved ? JSON.parse(saved) : initialItems;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (i: any) =>
+              i.id !== 'item-1' &&
+              i.id !== 'item-2' &&
+              i.id !== 'item-3' &&
+              i.id !== 'item-4' &&
+              i.id !== 'item-5'
+          );
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return initialItems;
   });
 
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile>(() => {
